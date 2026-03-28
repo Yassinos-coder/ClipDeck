@@ -348,11 +348,14 @@ fn build_header(window: &gtk4::Window) -> GBox {
     // Drag the window by pressing on the title area
     let drag = GestureClick::new();
     let win_drag = window.clone();
-    drag.connect_pressed(move |g, _n_press, _x, _y| {
-        let (rx, ry) = get_cursor_root_pos().unwrap_or((0, 0));
+    drag.connect_pressed(move |g, _n_press, x, y| {
+        let Some(surface) = win_drag.surface() else { return };
+        let Ok(toplevel) = surface.downcast::<gdk::Toplevel>() else { return };
+        let Some(event) = g.current_event() else { return };
+        let Some(device) = event.device() else { return };
         let ts = g.current_event_time();
-        #[allow(deprecated)]
-        win_drag.begin_move_drag(1, rx, ry, ts);
+        use gtk4::gdk::prelude::ToplevelExt as _;
+        toplevel.begin_move(&device, 1, x, y, ts);
     });
     title.add_controller(drag);
 
