@@ -108,11 +108,21 @@ chmod +x "$INSTALL_BIN"
 success "Binary installed → ${INSTALL_BIN}"
 
 # ── Ensure ~/.local/bin is on PATH ────────────────────────────────────────────
-if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
-    warn "~/.local/bin is not in your current PATH."
-    warn "Add this to your ~/.bashrc or ~/.zshrc and restart your terminal:"
-    warn "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+PATH_LINE='export PATH="$HOME/.local/bin:$PATH"'
+ADDED_TO=()
+for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
+    if [[ -f "$rc" ]] && ! grep -qF '.local/bin' "$rc"; then
+        echo "" >> "$rc"
+        echo "# Added by ClipDeck installer" >> "$rc"
+        echo "$PATH_LINE" >> "$rc"
+        ADDED_TO+=("$rc")
+    fi
+done
+if [[ ${#ADDED_TO[@]} -gt 0 ]]; then
+    success "Added ~/.local/bin to PATH in: ${ADDED_TO[*]}"
 fi
+# Apply to the current session so clipdeck is immediately available
+export PATH="$HOME/.local/bin:$PATH"
 
 # ── Install systemd user service ──────────────────────────────────────────────
 info "Setting up autostart service..."
