@@ -89,7 +89,7 @@ fn build_ui(
     // ── Create popup window (hidden initially, or shown if --show was passed) ──
     let deck = Arc::new(ClipDeckWindow::new(app, storage.clone()));
     if show_on_start {
-        deck.window.present();
+        deck.show();
     }
 
     // ── Cross-thread channel (background → GTK main loop) ─────────────────────

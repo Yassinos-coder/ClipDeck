@@ -1,6 +1,6 @@
 [package]
 name = "clipdeck"
-version = "0.1.13"
+version = "0.1.14"
 edition = "2021"
 description = "A fast, native clipboard manager and launcher for Linux"
 license = "MIT"
