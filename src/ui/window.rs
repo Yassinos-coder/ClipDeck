@@ -109,7 +109,12 @@ impl ClipDeckWindow {
         let clipboard_tab = ClipboardTab::new();
 
         let win_for_emoji = window.clone();
-        let emoji_tab = EmojiTab::new(move || win_for_emoji.hide());
+        let emoji_tab = EmojiTab::new(move || {
+            win_for_emoji.hide();
+            if let Err(e) = simulate_paste() {
+                log::debug!("Auto-paste unavailable: {e}");
+            }
+        });
 
         let shortcuts_tab = ShortcutsTab::new(storage.clone());
         let tools_tab     = ToolsTab::new(storage.clone());
