@@ -9,7 +9,8 @@ set -euo pipefail
 
 REPO="Yassinos-coder/ClipDeck"
 BINARY_NAME="clipdeck-linux-x86_64"
-INSTALL_BIN="/usr/local/bin/clipdeck"
+INSTALL_DIR="$HOME/.local/bin"
+INSTALL_BIN="$INSTALL_DIR/clipdeck"
 SERVICE_NAME="clipdeck.service"
 SERVICE_DIR="$HOME/.config/systemd/user"
 
@@ -34,17 +35,9 @@ if [[ "$OSTYPE" != "linux-gnu"* ]]; then
 fi
 
 # ── Check dependencies ────────────────────────────────────────────────────────
-check_dep() {
-    if ! command -v "$1" &>/dev/null; then
-        warn "$1 not found. Install with: sudo apt install $2"
-        return 1
-    fi
-}
-
-MISSING=0
-check_dep curl   curl  || MISSING=1
-check_dep sudo   sudo  || MISSING=1
-[[ $MISSING -eq 1 ]] && die "Please install the missing dependencies above."
+for dep in curl python3; do
+    command -v "$dep" &>/dev/null || die "$dep is required but not installed."
+done
 
 # ── Detect GTK4 ──────────────────────────────────────────────────────────────
 if ! pkg-config --exists gtk4 2>/dev/null; then
@@ -57,21 +50,34 @@ if ! pkg-config --exists gtk4 2>/dev/null; then
         xdotool
 fi
 
-# ── Fetch latest release tag ──────────────────────────────────────────────────
+# ── Fetch latest release (parse JSON with python3, not fragile grep/cut) ─────
 info "Checking latest release..."
 API_URL="https://api.github.com/repos/${REPO}/releases/latest"
 RELEASE_JSON=$(curl -fsSL "$API_URL") || die "Could not reach GitHub API"
 
-VERSION=$(echo "$RELEASE_JSON" | grep '"tag_name"' | head -1 | cut -d'"' -f4)
-[[ -z "$VERSION" ]] && die "No release found. Have you published a release yet? See BUILD.md."
+VERSION=$(echo "$RELEASE_JSON" | python3 -c "
+import sys, json
+r = json.load(sys.stdin)
+print(r['tag_name'])
+") || die "Could not parse release tag from GitHub API response."
 
-DOWNLOAD_URL=$(echo "$RELEASE_JSON" \
-    | grep '"browser_download_url"' \
-    | grep "$BINARY_NAME\"" \
-    | head -1 \
-    | cut -d'"' -f4)
+[[ -z "$VERSION" ]] && die "No release found. Have you published a release yet?"
 
-[[ -z "$DOWNLOAD_URL" ]] && die "Binary asset '${BINARY_NAME}' not found in release ${VERSION}."
+DOWNLOAD_URL=$(echo "$RELEASE_JSON" | python3 -c "
+import sys, json
+r = json.load(sys.stdin)
+assets = [a for a in r['assets'] if 'linux' in a['name'] and 'x86_64' in a['name']]
+if not assets:
+    sys.exit(1)
+print(assets[0]['browser_download_url'])
+") || die "Binary asset '${BINARY_NAME}' not found in release ${VERSION}."
+
+SHA_URL=$(echo "$RELEASE_JSON" | python3 -c "
+import sys, json
+r = json.load(sys.stdin)
+assets = [a for a in r['assets'] if a['name'].endswith('.sha256')]
+print(assets[0]['browser_download_url'] if assets else '')
+" 2>/dev/null || echo "")
 
 info "Found ClipDeck ${VERSION}"
 
@@ -79,34 +85,34 @@ info "Found ClipDeck ${VERSION}"
 TMP_BIN=$(mktemp /tmp/clipdeck.XXXXXX)
 info "Downloading ${BINARY_NAME}..."
 curl -fsSL --progress-bar "$DOWNLOAD_URL" -o "$TMP_BIN"
-
 chmod +x "$TMP_BIN"
 
-# ── Verify sha256 (if available) ──────────────────────────────────────────────
-SHA_URL=$(echo "$RELEASE_JSON" \
-    | grep '"browser_download_url"' \
-    | grep "${BINARY_NAME}.sha256\"" \
-    | head -1 \
-    | cut -d'"' -f4)
-
+# ── Verify SHA256 (if .sha256 asset exists in release) ───────────────────────
 if [[ -n "$SHA_URL" ]]; then
     TMP_SHA=$(mktemp /tmp/clipdeck.sha256.XXXXXX)
     curl -fsSL "$SHA_URL" -o "$TMP_SHA"
     EXPECTED=$(awk '{print $1}' "$TMP_SHA")
     ACTUAL=$(sha256sum "$TMP_BIN" | awk '{print $1}')
+    rm -f "$TMP_SHA"
     if [[ "$EXPECTED" != "$ACTUAL" ]]; then
-        rm -f "$TMP_BIN" "$TMP_SHA"
-        die "SHA256 mismatch! Download may be corrupted.\n  Expected: $EXPECTED\n  Got:      $ACTUAL"
+        rm -f "$TMP_BIN"
+        die "SHA256 mismatch — download may be corrupted.\n  Expected: $EXPECTED\n  Got:      $ACTUAL"
     fi
     success "SHA256 verified"
-    rm -f "$TMP_SHA"
 fi
 
-# ── Install binary ────────────────────────────────────────────────────────────
-info "Installing to ${INSTALL_BIN} (requires sudo)..."
-sudo mv "$TMP_BIN" "$INSTALL_BIN"
-sudo chmod +x "$INSTALL_BIN"
+# ── Install binary to ~/.local/bin (no sudo required) ────────────────────────
+mkdir -p "$INSTALL_DIR"
+mv "$TMP_BIN" "$INSTALL_BIN"
+chmod +x "$INSTALL_BIN"
 success "Binary installed → ${INSTALL_BIN}"
+
+# ── Ensure ~/.local/bin is on PATH ────────────────────────────────────────────
+if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+    warn "~/.local/bin is not in your current PATH."
+    warn "Add this to your ~/.bashrc or ~/.zshrc and restart your terminal:"
+    warn "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+fi
 
 # ── Install systemd user service ──────────────────────────────────────────────
 info "Setting up autostart service..."
@@ -123,8 +129,9 @@ success "Autostart service installed and enabled"
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 echo -e "\n${BOLD}${GREEN}ClipDeck ${VERSION} installed successfully!${RESET}\n"
-echo -e "  Press ${BOLD}Super + V${RESET} to open the clipboard manager"
+echo -e "  Press ${BOLD}Super+Alt+V${RESET} to open the clipboard manager"
+echo -e "  Binary:   ${CYAN}${INSTALL_BIN}${RESET}"
 echo -e "  Config:   ${CYAN}~/.config/clipdeck/settings.json${RESET}"
 echo -e "  Database: ${CYAN}~/.local/share/clipdeck/history.db${RESET}"
 echo -e "  Logs:     ${CYAN}journalctl --user -u clipdeck.service -f${RESET}"
-echo -e "  Uninstall:${CYAN} curl -fsSL https://raw.githubusercontent.com/${REPO}/production/uninstall.sh | bash${RESET}\n"
+echo -e "  Uninstall: ${CYAN}curl -fsSL https://raw.githubusercontent.com/${REPO}/production/uninstall.sh | bash${RESET}\n"

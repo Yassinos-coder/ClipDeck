@@ -74,7 +74,7 @@ jobs:
 
             **Manual download:**
             1. Download `clipdeck-linux-x86_64` from the assets below
-            2. `chmod +x clipdeck-linux-x86_64 && sudo mv clipdeck-linux-x86_64 /usr/local/bin/clipdeck`
+            2. `mkdir -p ~/.local/bin && mv clipdeck-linux-x86_64 ~/.local/bin/clipdeck && chmod +x ~/.local/bin/clipdeck`
             3. Press **Super+Alt+V** to open
 
             Requires: Pop!_OS / Ubuntu 22.04+ with GTK4 and Libadwaita installed.
