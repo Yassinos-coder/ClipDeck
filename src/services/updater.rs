@@ -146,37 +146,44 @@ pub async fn download_install_restart(
     tmp_file.flush().await?;
     drop(tmp_file);
 
-    // ── Set executable permissions ────────────────────────────────────────────
+    // ── Set executable permissions on the temp file ───────────────────────────
     let mut perms = std::fs::metadata(&tmp_path)?.permissions();
     perms.set_mode(0o755);
     std::fs::set_permissions(&tmp_path, perms)?;
 
-    // ── Atomic replace ────────────────────────────────────────────────────────
+    // ── Replace running binary ────────────────────────────────────────────────
     on_progress("Installing…".to_string());
     log::info!("Replacing {:?} with new binary", current_exe);
 
-    // Try a direct copy first (works when the exe is user-writable).
-    // Fall back to `pkexec cp` for system directories like /usr/local/bin.
-    let copy_result = std::fs::copy(&tmp_path, &current_exe);
-    match copy_result {
-        Ok(_) => {
+    // Unix trick: unlink the old file first (running process keeps its
+    // memory-mapped pages via the open inode), then copy the new binary to
+    // the now-vacant path.  This avoids ETXTBSY ("text file busy") which the
+    // kernel returns when you try to truncate a currently-executing file.
+    let install_result = std::fs::remove_file(&current_exe)
+        .and_then(|_| std::fs::copy(&tmp_path, &current_exe).map(|_| ()));
+
+    match install_result {
+        Ok(()) => {
             std::fs::remove_file(&tmp_path).ok();
         }
         Err(ref e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+            // Binary lives in a root-owned directory — escalate via pkexec.
             on_progress("Installing… (enter your password if prompted)".to_string());
-            log::info!("Direct copy failed, retrying with pkexec");
+            log::info!("Direct install failed ({}), retrying with pkexec", e);
+            let script = format!(
+                "rm -f '{}' && cp '{}' '{}' && chmod 755 '{}'",
+                current_exe.display(),
+                tmp_path.display(),
+                current_exe.display(),
+                current_exe.display(),
+            );
             let status = std::process::Command::new("pkexec")
-                .args([
-                    "cp",
-                    "--",
-                    tmp_path.to_str().unwrap_or_default(),
-                    current_exe.to_str().unwrap_or_default(),
-                ])
+                .args(["sh", "-c", &script])
                 .status()
-                .map_err(|e| anyhow::anyhow!("pkexec not found: {e}"))?;
+                .map_err(|e| anyhow::anyhow!("pkexec not available: {e}"))?;
             std::fs::remove_file(&tmp_path).ok();
             if !status.success() {
-                anyhow::bail!("pkexec cp failed — update cancelled");
+                anyhow::bail!("Privileged install failed — update cancelled");
             }
         }
         Err(e) => return Err(e.into()),

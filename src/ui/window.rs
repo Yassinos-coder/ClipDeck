@@ -34,8 +34,8 @@ use crate::ui::tabs::emoji_tab::EmojiTab;
 use crate::ui::tabs::shortcuts_tab::ShortcutsTab;
 use crate::ui::tabs::tools_tab::ToolsTab;
 
-const WINDOW_WIDTH: i32 = 620;
-const WINDOW_HEIGHT: i32 = 520;
+const WINDOW_WIDTH: i32 = 460;
+const WINDOW_HEIGHT: i32 = 460;
 
 /// The main popup window.
 pub struct ClipDeckWindow {
@@ -75,7 +75,7 @@ impl ClipDeckWindow {
         let root = GBox::new(Orientation::Vertical, 0);
 
         // Header
-        root.append(&build_header());
+        root.append(&build_header(&window));
 
         // Tab bar
         let tab_clipboard = make_tab_btn("📋  Clipboard");
@@ -297,12 +297,12 @@ fn make_tab_btn(label: &str) -> Button {
     b
 }
 
-fn build_header() -> GBox {
+fn build_header(window: &gtk4::Window) -> GBox {
     let h = GBox::new(Orientation::Horizontal, 0);
     h.add_css_class("clipdeck-header");
     h.set_margin_start(16);
-    h.set_margin_end(12);
-    h.set_margin_top(14);
+    h.set_margin_end(8);
+    h.set_margin_top(10);
     h.set_margin_bottom(10);
 
     let title = Label::new(Some("Clipboard"));
@@ -312,9 +312,16 @@ fn build_header() -> GBox {
 
     let ver = Label::new(Some(concat!("v", env!("CARGO_PKG_VERSION"))));
     ver.add_css_class("clipdeck-version");
+    ver.set_margin_end(10);
+
+    let close_btn = Button::builder().label("✕").build();
+    close_btn.add_css_class("header-close-btn");
+    let win_c = window.clone();
+    close_btn.connect_clicked(move |_| { win_c.hide(); });
 
     h.append(&title);
     h.append(&ver);
+    h.append(&close_btn);
     h
 }
 
@@ -391,6 +398,29 @@ const APP_CSS: &str = r#"
     color: #9ca3af;
     font-family: "Fira Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
     letter-spacing: 0.3px;
+}
+
+/* ── Header close button ── */
+.header-close-btn {
+    font-size: 13px;
+    color: #9ca3af;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 2px 7px;
+    min-height: 24px;
+    min-width: 24px;
+    font-family: "Fira Sans", "Ubuntu", sans-serif;
+    transition: color 100ms, background-color 100ms;
+}
+
+.header-close-btn:hover {
+    color: #dc2626;
+    background-color: #fee2e2;
+}
+
+.header-close-btn:active {
+    background-color: #fecaca;
 }
 
 /* ── Tab separator ── */
