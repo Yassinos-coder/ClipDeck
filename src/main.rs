@@ -9,6 +9,7 @@ mod ui;
 
 use std::sync::{Arc, Mutex};
 
+use gtk4::glib;
 use gtk4::prelude::*;
 use libadwaita::prelude::*;
 
@@ -68,15 +69,15 @@ fn build_ui(
     let deck = Arc::new(ClipDeckWindow::new(app, storage.clone()));
 
     // ── Cross-thread channel (background → GTK main loop) ─────────────────────
-    let (sender, receiver) =
-        gtk4::glib::MainContext::channel::<AppMessage>(gtk4::glib::Priority::DEFAULT);
+    let (sender, receiver) = async_channel::unbounded::<AppMessage>();
 
     // ── Attach receiver to GTK main loop ─────────────────────────────────────
     {
         let deck_clone = deck.clone();
-        receiver.attach(None, move |msg| {
-            handle_message(msg, &deck_clone);
-            gtk4::glib::ControlFlow::Continue
+        glib::MainContext::default().spawn_local(async move {
+            while let Ok(msg) = receiver.recv().await {
+                handle_message(msg, &deck_clone);
+            }
         });
     }
 
@@ -105,7 +106,7 @@ fn build_ui(
                     let info = match services::updater::check_for_update(&repo, &version).await {
                         Ok(Some(info)) => {
                             log::info!("New version available: {}", info.tag);
-                            let _ = sender_upd.send(AppMessage::NewVersionAvailable(info.tag.clone()));
+                            let _ = sender_upd.send(AppMessage::NewVersionAvailable(info.tag.clone())).await;
                             info
                         }
                         Ok(None) => {
@@ -122,7 +123,7 @@ fn build_ui(
                     let s = sender_upd.clone();
                     let progress = move |msg: String| {
                         log::info!("[update] {msg}");
-                        let _ = s.send(AppMessage::UpdateStatus(msg));
+                        let _ = s.send_blocking(AppMessage::UpdateStatus(msg));
                     };
 
                     if let Err(e) =
@@ -130,7 +131,7 @@ fn build_ui(
                     {
                         log::error!("Auto-update failed: {e}");
                         let _ = sender_upd
-                            .send(AppMessage::UpdateStatus(format!("Update failed: {e}")));
+                            .send(AppMessage::UpdateStatus(format!("Update failed: {e}"))).await;
                     }
                 });
             })

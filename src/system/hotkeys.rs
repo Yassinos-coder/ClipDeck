@@ -7,7 +7,7 @@
 //! warning — the user can still open ClipDeck by launching it from a
 //! terminal or by mapping the keybinding in their compositor settings.
 
-use gtk4::glib;
+use async_channel::Sender;
 use x11rb::connection::Connection;
 use x11rb::protocol::xproto::{ConnectionExt, GrabMode, KeyPressEvent, ModMask};
 use x11rb::protocol::Event;
@@ -22,7 +22,7 @@ const XK_V: u32 = 0x76;
 ///
 /// Sends `AppMessage::ToggleWindow` through `sender` whenever Super+V is
 /// pressed.  Errors are logged but never propagated.
-pub fn start_hotkey_listener(sender: glib::Sender<AppMessage>) {
+pub fn start_hotkey_listener(sender: Sender<AppMessage>) {
     std::thread::Builder::new()
         .name("hotkey-listener".into())
         .spawn(move || {
@@ -38,7 +38,7 @@ pub fn start_hotkey_listener(sender: glib::Sender<AppMessage>) {
         .expect("failed to spawn hotkey-listener thread");
 }
 
-fn run_listener(sender: &glib::Sender<AppMessage>) -> anyhow::Result<()> {
+fn run_listener(sender: &Sender<AppMessage>) -> anyhow::Result<()> {
     let (conn, screen_num) =
         RustConnection::connect(None).map_err(|e| anyhow::anyhow!("X11 connect: {e}"))?;
 
@@ -80,7 +80,7 @@ fn run_listener(sender: &glib::Sender<AppMessage>) -> anyhow::Result<()> {
     loop {
         let event = conn.wait_for_event()?;
         if let Event::KeyPress(KeyPressEvent { .. }) = event {
-            if sender.send(AppMessage::ToggleWindow).is_err() {
+            if sender.send_blocking(AppMessage::ToggleWindow).is_err() {
                 break; // GTK loop exited
             }
         }

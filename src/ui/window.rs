@@ -652,6 +652,33 @@ entry.search:focus {
     font-weight: 500;
 }
 
+/* ── Support / donate section ── */
+.support-label {
+    font-size: 12px;
+    color: #6b7280;
+    font-family: "Fira Sans", "Ubuntu", "Cantarell", sans-serif;
+}
+
+.donate-btn {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #003087;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-family: "Fira Sans", "Ubuntu", "Cantarell", sans-serif;
+    transition: background-color 120ms;
+}
+
+.donate-btn:hover {
+    background-color: #001f5b;
+}
+
+.donate-btn:active {
+    background-color: #00124a;
+}
+
 /* ── Empty / dim state ── */
 .dim-label {
     font-size: 13px;

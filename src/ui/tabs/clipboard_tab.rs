@@ -85,7 +85,8 @@ impl ClipboardTab {
             search.connect_search_changed(move |entry| {
                 let query = entry.text().to_string();
                 let mut s = state_clone.borrow_mut();
-                rebuild_list(&list_box_clone, &s.all_items, &query, &mut s.visible_items);
+                let all_items = s.all_items.clone();
+                rebuild_list(&list_box_clone, &all_items, &query, &mut s.visible_items);
             });
         }
 
@@ -104,7 +105,8 @@ impl ClipboardTab {
         let mut s = self.state.borrow_mut();
         s.all_items = history;
         let query = self.search.text().to_string();
-        rebuild_list(&self.list_box, &s.all_items, &query, &mut s.visible_items);
+        let all_items = s.all_items.clone();
+        rebuild_list(&self.list_box, &all_items, &query, &mut s.visible_items);
     }
 
     /// Prepend a freshly captured item to the top of the list.
@@ -114,7 +116,8 @@ impl ClipboardTab {
         s.all_items.retain(|i| i.content != item.content);
         s.all_items.insert(0, item);
         let query = self.search.text().to_string();
-        rebuild_list(&self.list_box, &s.all_items, &query, &mut s.visible_items);
+        let all_items = s.all_items.clone();
+        rebuild_list(&self.list_box, &all_items, &query, &mut s.visible_items);
     }
 
     /// Connect a callback fired when the user activates a row (Enter / double-click).
@@ -140,7 +143,8 @@ impl ClipboardTab {
     pub fn reset_search(&self) {
         self.search.set_text("");
         let mut s = self.state.borrow_mut();
-        rebuild_list(&self.list_box, &s.all_items, "", &mut s.visible_items);
+        let all_items = s.all_items.clone();
+        rebuild_list(&self.list_box, &all_items, "", &mut s.visible_items);
     }
 }
 

@@ -258,16 +258,11 @@ fn make_shortcut_row(
             let status2 = status_clone.clone();
             status2.set_label("Running…");
 
-            let (sender, receiver) = glib::MainContext::channel::<String>(glib::Priority::DEFAULT);
-
             std::thread::spawn(move || {
                 let result = sc2.execute().unwrap_or_else(|e| format!("Error: {e}"));
-                let _ = sender.send(result);
-            });
-
-            receiver.attach(None, move |output| {
-                status2.set_label(&output);
-                glib::ControlFlow::Break
+                glib::idle_add_local_once(move || {
+                    status2.set_label(&result);
+                });
             });
         });
     }

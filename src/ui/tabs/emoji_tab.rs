@@ -128,6 +128,6 @@ fn populate_flow_box(
 
         let child = FlowBoxChild::new();
         child.set_child(Some(&btn));
-        flow_box.append(&child);
+        flow_box.insert(&child, -1);
     }
 }

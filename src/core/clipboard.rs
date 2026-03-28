@@ -1,9 +1,7 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-// glib is re-exported by gtk4; access it via that path so we don't need a
-// separate direct dependency for the cross-thread channel type.
-use gtk4::glib;
+use async_channel::Sender;
 
 use crate::config::Settings;
 use crate::core::{ClipboardItem, Storage};
@@ -28,12 +26,12 @@ pub struct ClipboardMonitor;
 impl ClipboardMonitor {
     /// Spawn the monitor on a background thread.
     ///
-    /// The caller supplies a `glib::Sender<AppMessage>` so that discovered
+    /// The caller supplies an `async_channel::Sender<AppMessage>` so that discovered
     /// items can be forwarded to the GTK main loop safely.
     pub fn start(
         settings: Arc<Settings>,
         storage: Arc<Mutex<Storage>>,
-        sender: glib::Sender<AppMessage>,
+        sender: Sender<AppMessage>,
     ) {
         std::thread::Builder::new()
             .name("clipboard-monitor".into())
@@ -45,7 +43,7 @@ impl ClipboardMonitor {
 fn run_monitor(
     settings: Arc<Settings>,
     storage: Arc<Mutex<Storage>>,
-    sender: glib::Sender<AppMessage>,
+    sender: Sender<AppMessage>,
 ) {
     let mut clipboard = match arboard::Clipboard::new() {
         Ok(cb) => cb,
@@ -115,7 +113,7 @@ fn run_monitor(
             }
         };
 
-        if sender.send(AppMessage::NewClipboardItem(stored)).is_err() {
+        if sender.send_blocking(AppMessage::NewClipboardItem(stored)).is_err() {
             // GTK main loop has exited — time to stop.
             log::info!("GTK channel closed, stopping clipboard monitor");
             break;

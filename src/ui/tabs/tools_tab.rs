@@ -67,15 +67,12 @@ impl ToolsTab {
                 let status2 = status.clone();
                 status2.set_label("Flushing DNS cache…");
 
-                let (sender, receiver) = glib::MainContext::channel::<String>(glib::Priority::DEFAULT);
                 std::thread::spawn(move || {
                     let msg = commands::flush_dns()
                         .unwrap_or_else(|e| format!("Error: {e}"));
-                    let _ = sender.send(msg);
-                });
-                receiver.attach(None, move |msg| {
-                    status2.set_label(&msg);
-                    glib::ControlFlow::Break
+                    glib::idle_add_local_once(move || {
+                        status2.set_label(&msg);
+                    });
                 });
             });
         }
@@ -136,16 +133,13 @@ impl ToolsTab {
                     .unwrap_or_else(|_| "clipdeck".to_string());
 
                 let status2 = status.clone();
-                let (sender, receiver) = glib::MainContext::channel::<String>(glib::Priority::DEFAULT);
                 std::thread::spawn(move || {
                     let msg = autostart::install_service(&binary)
                         .map(|_| "Autostart installed. Run: systemctl --user enable --now clipdeck.service".to_string())
                         .unwrap_or_else(|e| format!("Error: {e}"));
-                    let _ = sender.send(msg);
-                });
-                receiver.attach(None, move |msg| {
-                    status2.set_label(&msg);
-                    glib::ControlFlow::Break
+                    glib::idle_add_local_once(move || {
+                        status2.set_label(&msg);
+                    });
                 });
             });
         }
@@ -153,6 +147,40 @@ impl ToolsTab {
 
         root.append(&grid);
         root.append(&status_label);
+
+        // ── Support section ───────────────────────────────────────────────────
+        let sep = gtk4::Separator::new(Orientation::Horizontal);
+        sep.set_margin_start(16);
+        sep.set_margin_end(16);
+        sep.set_margin_top(8);
+        root.append(&sep);
+
+        let support_lbl = Label::builder()
+            .label("If ClipDeck saves you time, consider supporting the project!")
+            .halign(gtk4::Align::Start)
+            .wrap(true)
+            .margin_start(16)
+            .margin_end(16)
+            .margin_top(12)
+            .margin_bottom(8)
+            .build();
+        support_lbl.add_css_class("support-label");
+        root.append(&support_lbl);
+
+        let donate_btn = Button::builder()
+            .label("Donate via PayPal")
+            .halign(gtk4::Align::Start)
+            .margin_start(16)
+            .margin_end(16)
+            .margin_bottom(16)
+            .build();
+        donate_btn.add_css_class("donate-btn");
+        donate_btn.connect_clicked(|_| {
+            let _ = std::process::Command::new("xdg-open")
+                .arg("https://paypal.me/the1290srider")
+                .spawn();
+        });
+        root.append(&donate_btn);
 
         Self { root }
     }
