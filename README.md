@@ -58,31 +58,27 @@
 
 ## Installation
 
-### Prerequisites (Pop!_OS / Ubuntu 22.04+)
+### One-line install (recommended)
 
 ```bash
-# Rust toolchain
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source "$HOME/.cargo/env"
-
-# System libraries
-sudo apt update
-sudo apt install -y \
-    libgtk-4-dev \
-    libadwaita-1-dev \
-    libx11-dev \
-    pkg-config \
-    build-essential \
-    xdotool        # optional — enables auto-paste after selection
+curl -fsSL https://raw.githubusercontent.com/Yassinos-coder/ClipDeck/production/install.sh | bash
 ```
 
-### Build
+That's it. The script will:
+- Install GTK4 / Libadwaita system libraries if missing
+- Download the latest release binary and verify its SHA256
+- Install to `/usr/local/bin/clipdeck`
+- Set up and enable the systemd user service for autostart
+
+### Build from source
 
 ```bash
-git clone https://github.com/yassinos-coder/clipdeck.git
-cd clipdeck
+# System libraries
+sudo apt install -y libgtk-4-dev libadwaita-1-dev libx11-dev pkg-config build-essential xdotool
 
-# Release build (optimised, stripped)
+# Clone & build
+git clone https://github.com/Yassinos-coder/ClipDeck.git
+cd ClipDeck
 cargo build --release
 ```
 
