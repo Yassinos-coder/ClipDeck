@@ -1,6 +1,6 @@
 //! Global hotkey listener for X11.
 //!
-//! Uses `x11rb` to grab `Super + V` on the root window so that the
+//! Uses `x11rb` to grab `Super + Alt + V` on the root window so that the
 //! shortcut fires regardless of which application has focus.
 //!
 //! On Wayland without XWayland this module will fail gracefully and log a
@@ -20,7 +20,7 @@ const XK_V: u32 = 0x76;
 
 /// Spawn the hotkey listener on a dedicated OS thread.
 ///
-/// Sends `AppMessage::ToggleWindow` through `sender` whenever Super+V is
+/// Sends `AppMessage::ToggleWindow` through `sender` whenever Super+Alt+V is
 /// pressed.  Errors are logged but never propagated.
 pub fn start_hotkey_listener(sender: Sender<AppMessage>) {
     std::thread::Builder::new()
@@ -29,7 +29,7 @@ pub fn start_hotkey_listener(sender: Sender<AppMessage>) {
             if let Err(e) = run_listener(&sender) {
                 log::warn!("Global hotkey listener stopped: {e}");
                 log::warn!(
-                    "Super+V hotkey is unavailable. \
+                    "Super+Alt+V hotkey is unavailable. \
                      You can map it manually in GNOME Settings → Keyboard → Custom Shortcuts \
                      with the command: clipdeck --show"
                 );
@@ -47,19 +47,21 @@ fn run_listener(sender: &Sender<AppMessage>) -> anyhow::Result<()> {
     let keycode = keysym_to_keycode(&conn, XK_V)
         .ok_or_else(|| anyhow::anyhow!("keysym 0x{XK_V:x} not found in keyboard map"))?;
 
-    log::debug!("Super+V → keycode {keycode}");
+    log::debug!("Super+Alt+V → keycode {keycode}");
 
     // Grab with and without Num Lock (Mod2) / Caps Lock (Lock) variants so the
     // shortcut fires regardless of those modifier states.
     let super_key = ModMask::M4;
+    let alt_key   = ModMask::M1;
     let num_lock  = ModMask::M2;
     let caps_lock = ModMask::LOCK;
 
+    let base = super_key | alt_key;
     let variants = [
-        super_key,
-        super_key | num_lock,
-        super_key | caps_lock,
-        super_key | num_lock | caps_lock,
+        base,
+        base | num_lock,
+        base | caps_lock,
+        base | num_lock | caps_lock,
     ];
 
     for mods in variants {
@@ -75,7 +77,7 @@ fn run_listener(sender: &Sender<AppMessage>) -> anyhow::Result<()> {
 
     conn.flush()?;
 
-    log::info!("Global hotkey Super+V registered on X11");
+    log::info!("Global hotkey Super+Alt+V registered on X11");
 
     loop {
         let event = conn.wait_for_event()?;

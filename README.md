@@ -11,7 +11,7 @@
 
 <p align="center">
   <strong>ClipDeck</strong> is a keyboard-driven clipboard manager and productivity launcher for Linux (Pop!_OS / GNOME / X11), inspired by Windows Win+V and Raycast.<br/>
-  Press <kbd>Super</kbd>+<kbd>V</kbd> to open it from anywhere. Zero electron, zero JS — pure Rust and GTK4.
+  Press <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd> to open it from anywhere. Zero electron, zero JS — pure Rust and GTK4.
 </p>
 
 ---
@@ -26,7 +26,7 @@
 | **Tools** | Flush DNS cache, clear clipboard history, open config directory, install/uninstall autostart |
 
 ### Core behaviour
-- **Global hotkey** — Super+V registered via X11 XGrabKey (works on X11; graceful fallback on Wayland)
+- **Global hotkey** — Super+Alt+V registered via X11 XGrabKey (works on X11; graceful fallback on Wayland)
 - **Lightweight** — native Rust binary, no runtime, minimal memory footprint
 - **Dark mode** — Catppuccin Mocha palette via Libadwaita + custom CSS
 - **Sensitive content filter** — entries containing "password", "token", "secret", etc. are silently skipped
@@ -118,7 +118,7 @@ systemctl --user status clipdeck.service
 
 | Key | Action |
 |-----|--------|
-| `Super + V` | Toggle ClipDeck open/closed |
+| `Super + Alt + V` | Toggle ClipDeck open/closed |
 | `Esc` | Close window |
 | `↑ / ↓` | Navigate clipboard list |
 | `Enter` | Copy selected item and close |
