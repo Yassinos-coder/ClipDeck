@@ -10,11 +10,10 @@ ExecStart=%h/.local/bin/clipdeck
 Restart=on-failure
 RestartSec=5
 
-# X11 / D-Bus environment (needed when launched by systemd, not the shell)
-Environment=DISPLAY=:0
-Environment=WAYLAND_DISPLAY=wayland-0
+# Inherit display and auth from the graphical session environment.
+# GNOME / Pop!_OS imports these into the systemd user daemon automatically.
 Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
-PassEnvironment=DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR
+PassEnvironment=DISPLAY XAUTHORITY WAYLAND_DISPLAY DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR
 
 # Resource limits — ClipDeck is lightweight
 MemoryMax=64M
