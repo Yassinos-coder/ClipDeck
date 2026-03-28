@@ -22,13 +22,16 @@ use std::sync::{Arc, Mutex};
 
 use gtk4::prelude::*;
 use gtk4::{
-    gdk, Box as GBox, Button, CssProvider, EventControllerKey, Label, Orientation,
+    gdk, Box as GBox, Button, CssProvider, EventControllerKey, GestureClick, Label, Orientation,
     Revealer, RevealerTransitionType, Stack,
 };
 
 use crate::core::clipboard::write_to_clipboard;
 use crate::core::{ClipboardItem, Storage};
-use crate::system::commands::simulate_paste;
+use crate::system::commands::{
+    get_cursor_root_pos, load_clipdeck_window_pos, move_clipdeck_window, save_clipdeck_window_pos,
+    simulate_paste,
+};
 use crate::ui::tabs::clipboard_tab::ClipboardTab;
 use crate::ui::tabs::emoji_tab::EmojiTab;
 use crate::ui::tabs::shortcuts_tab::ShortcutsTab;
@@ -214,6 +217,13 @@ impl ClipDeckWindow {
             });
         }
 
+        // ── Save window position whenever it is hidden ────────────────────────
+        window.connect_visible_notify(|w| {
+            if !w.is_visible() {
+                save_clipdeck_window_pos();
+            }
+        });
+
         let me = Self {
             window,
             clipboard_tab,
@@ -251,7 +261,27 @@ impl ClipDeckWindow {
             1 => self.emoji_tab.focus_search(),
             _ => {}
         }
+
+        // Determine where to open: saved position → near cursor → let WM decide
+        let target_pos = load_clipdeck_window_pos().or_else(|| {
+            get_cursor_root_pos().map(|(cx, cy)| {
+                let x = cx + 20;
+                let y = cy.saturating_sub(WINDOW_HEIGHT / 2);
+                (x, y)
+            })
+        });
+
         self.window.present();
+
+        // Move window after GTK's main loop has had a chance to map it
+        if let Some((x, y)) = target_pos {
+            gtk4::glib::timeout_add_local_once(
+                std::time::Duration::from_millis(80),
+                move || {
+                    move_clipdeck_window(x, y);
+                },
+            );
+        }
     }
 
     pub fn prepend_item(&self, item: ClipboardItem) {
@@ -314,6 +344,17 @@ fn build_header(window: &gtk4::Window) -> GBox {
     title.add_css_class("clipdeck-title");
     title.set_hexpand(true);
     title.set_halign(gtk4::Align::Start);
+
+    // Drag the window by pressing on the title area
+    let drag = GestureClick::new();
+    let win_drag = window.clone();
+    drag.connect_pressed(move |g, _n_press, _x, _y| {
+        let (rx, ry) = get_cursor_root_pos().unwrap_or((0, 0));
+        let ts = g.current_event_time();
+        #[allow(deprecated)]
+        win_drag.begin_move_drag(1, rx, ry, ts);
+    });
+    title.add_controller(drag);
 
     let ver = Label::new(Some(concat!("v", env!("CARGO_PKG_VERSION"))));
     ver.add_css_class("clipdeck-version");
@@ -395,6 +436,7 @@ const APP_CSS: &str = r#"
     color: #111827;
     font-family: "Fira Sans", "Ubuntu", "Cantarell", sans-serif;
     letter-spacing: -0.2px;
+    cursor: move;
 }
 
 .clipdeck-version {

@@ -26,13 +26,27 @@ pub fn start_hotkey_listener(sender: Sender<AppMessage>) {
     std::thread::Builder::new()
         .name("hotkey-listener".into())
         .spawn(move || {
-            if let Err(e) = run_listener(&sender) {
-                log::warn!("Global hotkey listener stopped: {e}");
-                log::warn!(
-                    "Super+Alt+V hotkey is unavailable. \
-                     You can map it manually in GNOME Settings → Keyboard → Custom Shortcuts \
-                     with the command: clipdeck --show"
-                );
+            let mut attempts = 0u32;
+            loop {
+                if sender.is_closed() {
+                    break; // GTK main loop exited
+                }
+
+                match run_listener(&sender) {
+                    Ok(()) => break, // clean exit (sender closed mid-loop)
+                    Err(e) => {
+                        attempts += 1;
+                        if attempts == 1 {
+                            log::warn!(
+                                "Super+Alt+V hotkey unavailable: {e}. \
+                                 Retrying every 10 s — another app may have grabbed the key."
+                            );
+                        } else {
+                            log::debug!("Hotkey retry #{attempts}: {e}");
+                        }
+                        std::thread::sleep(std::time::Duration::from_secs(10));
+                    }
+                }
             }
         })
         .expect("failed to spawn hotkey-listener thread");
