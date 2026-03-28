@@ -15,8 +15,11 @@ pub enum AppMessage {
     NewClipboardItem(ClipboardItem),
     /// Toggle window visibility (from global hotkey).
     ToggleWindow,
-    /// A newer version is available on GitHub.
+    /// A newer version is available and download has started automatically.
     NewVersionAvailable(String),
+    /// Auto-update progress text shown in the window status bar.
+    /// Empty string hides the bar.
+    UpdateStatus(String),
 }
 
 /// Continuously polls the system clipboard and writes new entries to storage.

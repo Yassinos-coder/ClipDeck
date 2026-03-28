@@ -86,15 +86,14 @@ fn build_ui(
     // ── Spawn X11 hotkey listener ─────────────────────────────────────────────
     start_hotkey_listener(sender.clone());
 
-    // ── Async: version check (fire-and-forget) ────────────────────────────────
+    // ── Auto-updater (check + download + replace + restart) ──────────────────
     {
         let repo = settings.github_repo.clone();
         let version = settings.version.clone();
-        let sender_vc = sender.clone();
+        let sender_upd = sender.clone();
 
-        // Spawn a Tokio runtime just for the one-shot HTTP call.
         std::thread::Builder::new()
-            .name("version-check".into())
+            .name("auto-updater".into())
             .spawn(move || {
                 let rt = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
@@ -102,18 +101,40 @@ fn build_ui(
                     .unwrap();
 
                 rt.block_on(async move {
-                    match services::updater::check_for_update(&repo, &version).await {
-                        Ok(Some(new_ver)) => {
-                            log::info!("New version available: {new_ver}");
-                            let _ = sender_vc
-                                .send(AppMessage::NewVersionAvailable(new_ver));
+                    // 1. Check for a new release.
+                    let info = match services::updater::check_for_update(&repo, &version).await {
+                        Ok(Some(info)) => {
+                            log::info!("New version available: {}", info.tag);
+                            let _ = sender_upd.send(AppMessage::NewVersionAvailable(info.tag.clone()));
+                            info
                         }
-                        Ok(None) => log::info!("ClipDeck is up to date"),
-                        Err(e) => log::debug!("Version check failed: {e}"),
+                        Ok(None) => {
+                            log::info!("ClipDeck is up to date");
+                            return;
+                        }
+                        Err(e) => {
+                            log::debug!("Version check failed: {e}");
+                            return;
+                        }
+                    };
+
+                    // 2. Download, install, and restart automatically.
+                    let s = sender_upd.clone();
+                    let progress = move |msg: String| {
+                        log::info!("[update] {msg}");
+                        let _ = s.send(AppMessage::UpdateStatus(msg));
+                    };
+
+                    if let Err(e) =
+                        services::updater::download_install_restart(&info, progress).await
+                    {
+                        log::error!("Auto-update failed: {e}");
+                        let _ = sender_upd
+                            .send(AppMessage::UpdateStatus(format!("Update failed: {e}")));
                     }
                 });
             })
-            .expect("version-check thread");
+            .expect("auto-updater thread");
     }
 
     log::info!("ClipDeck ready — press Super+V to open");
@@ -139,7 +160,15 @@ fn handle_message(msg: AppMessage, deck: &ClipDeckWindow) {
 
         AppMessage::NewVersionAvailable(ver) => {
             log::info!("Update available: {ver}");
-            // TODO Phase 2: show an in-app banner
+            deck.show_update_status(&format!("Update {} found — downloading…", ver));
+        }
+
+        AppMessage::UpdateStatus(msg) => {
+            if msg.is_empty() {
+                deck.hide_update_status();
+            } else {
+                deck.show_update_status(&msg);
+            }
         }
     }
 }

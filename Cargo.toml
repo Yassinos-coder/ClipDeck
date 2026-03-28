@@ -37,8 +37,11 @@ chrono = { version = "0.4", features = ["serde"] }
 # Fuzzy search
 fuzzy-matcher = "0.3"
 
-# HTTP client (version check)
-reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+# HTTP client (version check + binary download)
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
+
+# Stream utilities (used by updater to iterate response body chunks)
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
 
 # Logging
 log = "0.4"
