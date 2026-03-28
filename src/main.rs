@@ -114,7 +114,9 @@ fn build_ui(
     // ── Auto-updater (check + download + replace + restart) ──────────────────
     {
         let repo = settings.github_repo.clone();
-        let version = settings.version.clone();
+        // Always use the compiled-in version — never the settings.json value,
+        // which can be stale after an auto-update replaces the binary.
+        let version = env!("CARGO_PKG_VERSION").to_string();
         let sender_upd = sender.clone();
 
         std::thread::Builder::new()
