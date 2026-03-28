@@ -1,4 +1,4 @@
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0891b2&height=140&section=header&text=ClipDeck&fontSize=60&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Fast%2C%20native%20clipboard%20manager%20%26%20launcher%20for%20Linux&descAlignY=58&descAlign=50" alt="ClipDeck Header" />
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0891b2&height=140&section=header&text=ClipDeck&fontSize=60&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Fast%2C%20native%20clipboard%20manager%20and%20launcher%20for%20Linux&descAlignY=58&descAlign=50" alt="ClipDeck Header" />
 
 <p align="center">
   <img src="https://img.shields.io/badge/Rust-stable-orange?style=for-the-badge&logo=rust&logoColor=white&labelColor=1c1917" alt="Rust" />
