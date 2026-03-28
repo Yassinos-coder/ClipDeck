@@ -252,3 +252,4 @@ If ClipDeck saves you time, consider supporting the project!
 MIT — see [LICENSE](LICENSE) for details.
 
 <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0891b2&height=100&section=footer" alt="Footer" />
+# ClipDeck
