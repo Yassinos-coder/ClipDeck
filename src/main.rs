@@ -137,7 +137,7 @@ fn build_ui(
             .expect("auto-updater thread");
     }
 
-    log::info!("ClipDeck ready — press Super+V to open");
+    log::info!("ClipDeck ready — press Super+Alt+V to open");
 }
 
 // ── Message dispatcher ────────────────────────────────────────────────────────

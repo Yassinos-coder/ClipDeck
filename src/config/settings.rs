@@ -43,7 +43,7 @@ impl Default for Settings {
                 "apikey".to_string(),
                 "private_key".to_string(),
             ],
-            github_repo: "yourusername/clipdeck".to_string(),
+            github_repo: "Yassinos-coder/ClipDeck".to_string(),
             version: default_version(),
         }
     }
