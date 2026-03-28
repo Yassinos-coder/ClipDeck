@@ -1,0 +1,79 @@
+name: Release
+
+# Triggers when you push a version tag: git tag v0.2.0 && git push --tags
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-linux:
+    name: Build & Release (Ubuntu 22.04)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── System dependencies ────────────────────────────────────────────────
+      - name: Install GTK4 / Libadwaita / X11 headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            libgtk-4-dev \
+            libadwaita-1-dev \
+            libx11-dev \
+            libxcb1-dev \
+            pkg-config \
+            build-essential
+
+      # ── Rust toolchain ─────────────────────────────────────────────────────
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      # ── Build ──────────────────────────────────────────────────────────────
+      - name: Build release binary
+        run: cargo build --release
+
+      # Asset name must match what the auto-updater looks for:
+      # services/updater.rs → find(|a| a.name.contains("linux") && a.name.contains("x86_64"))
+      - name: Rename binary
+        run: |
+          cp target/release/clipdeck clipdeck-linux-x86_64
+          sha256sum clipdeck-linux-x86_64 > clipdeck-linux-x86_64.sha256
+
+      # ── GitHub Release ────────────────────────────────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            clipdeck-linux-x86_64
+            clipdeck-linux-x86_64.sha256
+            systemd/clipdeck.service
+          generate_release_notes: true
+          body: |
+            ## Installation
+
+            **One-liner (recommended):**
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/Yassinos-coder/ClipDeck/production/install.sh | bash
+            ```
+
+            **Manual download:**
+            1. Download `clipdeck-linux-x86_64` from the assets below
+            2. `chmod +x clipdeck-linux-x86_64 && sudo mv clipdeck-linux-x86_64 /usr/local/bin/clipdeck`
+            3. Press **Super+V** to open
+
+            Requires: Pop!_OS / Ubuntu 22.04+ with GTK4 and Libadwaita installed.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
