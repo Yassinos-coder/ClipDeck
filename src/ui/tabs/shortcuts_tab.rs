@@ -258,11 +258,17 @@ fn make_shortcut_row(
             let status2 = status_clone.clone();
             status2.set_label("Running…");
 
+            // Send only the String (which is Send) from the thread;
+            // receive it on the GTK main thread via spawn_local.
+            let (tx, rx) = async_channel::bounded::<String>(1);
             std::thread::spawn(move || {
                 let result = sc2.execute().unwrap_or_else(|e| format!("Error: {e}"));
-                glib::idle_add_local_once(move || {
-                    status2.set_label(&result);
-                });
+                let _ = tx.send_blocking(result);
+            });
+            glib::MainContext::default().spawn_local(async move {
+                if let Ok(output) = rx.recv().await {
+                    status2.set_label(&output);
+                }
             });
         });
     }

@@ -67,12 +67,16 @@ impl ToolsTab {
                 let status2 = status.clone();
                 status2.set_label("Flushing DNS cache…");
 
+                let (tx, rx) = async_channel::bounded::<String>(1);
                 std::thread::spawn(move || {
                     let msg = commands::flush_dns()
                         .unwrap_or_else(|e| format!("Error: {e}"));
-                    glib::idle_add_local_once(move || {
+                    let _ = tx.send_blocking(msg);
+                });
+                glib::MainContext::default().spawn_local(async move {
+                    if let Ok(msg) = rx.recv().await {
                         status2.set_label(&msg);
-                    });
+                    }
                 });
             });
         }
@@ -133,13 +137,17 @@ impl ToolsTab {
                     .unwrap_or_else(|_| "clipdeck".to_string());
 
                 let status2 = status.clone();
+                let (tx, rx) = async_channel::bounded::<String>(1);
                 std::thread::spawn(move || {
                     let msg = autostart::install_service(&binary)
                         .map(|_| "Autostart installed. Run: systemctl --user enable --now clipdeck.service".to_string())
                         .unwrap_or_else(|e| format!("Error: {e}"));
-                    glib::idle_add_local_once(move || {
+                    let _ = tx.send_blocking(msg);
+                });
+                glib::MainContext::default().spawn_local(async move {
+                    if let Ok(msg) = rx.recv().await {
                         status2.set_label(&msg);
-                    });
+                    }
                 });
             });
         }

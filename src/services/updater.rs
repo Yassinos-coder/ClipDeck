@@ -7,7 +7,6 @@
 //!
 //! The database at ~/.local/share/clipdeck/history.db is never touched.
 
-use std::io::Write as _;
 use std::os::unix::fs::PermissionsExt as _;
 
 use serde::Deserialize;

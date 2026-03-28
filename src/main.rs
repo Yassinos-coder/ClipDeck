@@ -11,7 +11,6 @@ use std::sync::{Arc, Mutex};
 
 use gtk4::glib;
 use gtk4::prelude::*;
-use libadwaita::prelude::*;
 
 use config::Settings;
 use core::clipboard::{AppMessage, ClipboardMonitor};
