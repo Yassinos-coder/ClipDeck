@@ -1,0 +1,58 @@
+[package]
+name = "clipdeck"
+version = "0.1.0"
+edition = "2021"
+description = "A fast, native clipboard manager and launcher for Linux"
+license = "MIT"
+repository = "https://github.com/yourusername/clipdeck"
+
+[[bin]]
+name = "clipdeck"
+path = "src/main.rs"
+
+[dependencies]
+# GUI — GTK4 + Libadwaita
+gtk4 = "0.9"
+libadwaita = "0.7"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# SQLite storage (bundled = no system dep)
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Cross-platform clipboard (X11 + Wayland)
+arboard = "3"
+
+# X11 global hotkey registration
+x11rb = { version = "0.13", features = ["allow-unsafe-code"] }
+
+# Date / time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Fuzzy search
+fuzzy-matcher = "0.3"
+
+# HTTP client (version check)
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# Platform directories (~/.config, ~/.local/share, …)
+dirs = "5"
+
+# Error handling
+anyhow = "1"
+thiserror = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

@@ -1,0 +1,26 @@
+[Unit]
+Description=ClipDeck — clipboard manager & launcher
+Documentation=https://github.com/yourusername/clipdeck
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+# Replace with the absolute path to your binary, e.g.:
+#   ExecStart=/usr/local/bin/clipdeck
+#   ExecStart=%h/.cargo/bin/clipdeck
+ExecStart=%h/.cargo/bin/clipdeck
+Restart=on-failure
+RestartSec=5
+
+# X11 / D-Bus environment (needed when launched by systemd, not the shell)
+Environment=DISPLAY=:0
+Environment=WAYLAND_DISPLAY=wayland-0
+PassEnvironment=DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR
+
+# Resource limits — ClipDeck is lightweight
+MemoryMax=64M
+CPUQuota=10%
+
+[Install]
+WantedBy=graphical-session.target
