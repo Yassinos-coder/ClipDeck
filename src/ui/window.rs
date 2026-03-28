@@ -328,87 +328,126 @@ fn load_css() {
     );
 }
 
-// ── Stylesheet — Windows 11 / Fluent Design ───────────────────────────────────
+// ── Stylesheet — "Signal" (Developer-First Light Theme) ──────────────────────
+//
+//  Philosophy: precision tool for power users.
+//  • Fira Sans + Fira Mono — native to Pop!_OS / Ubuntu developer stack
+//  • Left-bar selection indicator — VS Code lineage, immediately legible
+//  • Underline-only tab active state — editorial, not pill-shaped
+//  • Vivid #2563eb accent — bolder than generic blue, confident
+//  • Clipboard content always rendered in monospace — code is at home
 
 const APP_CSS: &str = r#"
-/* ── Window ── */
+/* ═══════════════════════════════════════════════════════════
+   ClipDeck — "Signal" Design System
+   Palette:
+     white    #ffffff   surface
+     off-white#fafafa   header / tab bar
+     border   #eaeaea   dividers
+     ink      #111827   primary text
+     muted    #6b7280   secondary text
+     ghost    #9ca3af   timestamps, hints
+     accent   #2563eb   interactive blue
+     accent+  #1d4ed8   pressed blue
+     hover-bg #f3f4f6   subtle hover
+     sel-bg   #eff6ff   selected background
+     sel-bar  #2563eb   left selection indicator
+     green    #15803d   run / success
+     red      #dc2626   delete / error
+     amber-bg #fffbeb   update bar
+     amber-fg #92400e   update bar text
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Window shell ── */
 .clipdeck-window {
     background-color: #ffffff;
-    border-radius: 10px;
-    border: 1px solid #d0d0d0;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    border: 1px solid #d1d5db;
+    box-shadow:
+        0 0 0 1px rgba(0,0,0,0.04),
+        0 4px 6px rgba(0,0,0,0.05),
+        0 12px 40px rgba(0,0,0,0.14),
+        0 24px 64px rgba(0,0,0,0.08);
 }
 
 /* ── Header ── */
 .clipdeck-header {
-    background-color: #f9f9f9;
-    border-bottom: 1px solid #ebebeb;
-    border-radius: 10px 10px 0 0;
+    background-color: #fafafa;
+    border-bottom: 1px solid #eaeaea;
+    border-radius: 12px 12px 0 0;
 }
 
 .clipdeck-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #1a1a1a;
-    font-family: "Segoe UI", "Inter", "Cantarell", sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    font-family: "Fira Sans", "Ubuntu", "Cantarell", sans-serif;
+    letter-spacing: -0.2px;
 }
 
 .clipdeck-version {
-    font-size: 11px;
-    color: #9e9e9e;
+    font-size: 10px;
+    font-weight: 500;
+    color: #9ca3af;
+    font-family: "Fira Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    letter-spacing: 0.3px;
 }
 
 /* ── Tab separator ── */
 .tab-separator {
-    background-color: #ebebeb;
+    background-color: #eaeaea;
     min-height: 1px;
 }
 
 /* ── Tab row ── */
 .tab-row {
-    background-color: #f9f9f9;
+    background-color: #fafafa;
 }
 
-/* ── Tab buttons ── */
+/* ── Tab buttons — underline style ── */
 .tab-btn {
     font-size: 12px;
     font-weight: 500;
-    color: #616161;
-    padding: 4px 14px;
-    border-radius: 6px;
+    color: #6b7280;
+    padding: 6px 14px;
+    border-radius: 0;
     border: none;
+    border-bottom: 2px solid transparent;
     background: transparent;
-    min-height: 30px;
-    font-family: "Segoe UI", "Inter", sans-serif;
+    min-height: 34px;
+    font-family: "Fira Sans", "Ubuntu", "Cantarell", sans-serif;
+    transition: color 120ms, border-color 120ms;
 }
 
 .tab-btn:hover {
-    background-color: rgba(0,0,0,0.05);
-    color: #1a1a1a;
+    color: #374151;
+    background-color: rgba(0,0,0,0.03);
 }
 
+/* Active tab: vivid accent underline — the one memorable detail */
 .tab-btn.active {
-    color: #0078d4;
+    color: #2563eb;
     font-weight: 600;
-    background-color: rgba(0,120,212,0.08);
+    border-bottom: 2px solid #2563eb;
+    background-color: transparent;
 }
 
 /* ── Search entry ── */
 entry.search {
-    background-color: #f3f3f3;
-    color: #1a1a1a;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    padding: 7px 12px;
+    background-color: #f9fafb;
+    color: #111827;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 14px;
     font-size: 13px;
-    caret-color: #0078d4;
-    font-family: "Segoe UI", "Inter", sans-serif;
+    font-family: "Fira Sans", "Ubuntu", "Cantarell", sans-serif;
+    caret-color: #2563eb;
 }
 
 entry.search:focus {
     background-color: #ffffff;
-    border-color: #0078d4;
-    box-shadow: 0 0 0 2px rgba(0,120,212,0.15);
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
 }
 
 /* ── Clipboard list ── */
@@ -417,54 +456,63 @@ entry.search:focus {
 }
 
 .clipboard-list row {
-    background-color: #ffffff;
-    border-radius: 6px;
-    margin: 2px 8px;
-    border: 1px solid transparent;
+    background-color: transparent;
+    border-radius: 0;
+    margin: 0;
+    border: none;
+    border-left: 3px solid transparent;
+    transition: background-color 80ms, border-color 80ms;
 }
 
 .clipboard-list row:hover {
-    background-color: #f5f5f5;
-    border-color: #e8e8e8;
+    background-color: #f3f4f6;
+    border-left: 3px solid transparent;
 }
 
+/* The VS Code-lineage left bar — the signature interaction */
 .clipboard-list row:selected {
-    background-color: #dde8f8;
-    border-color: #0078d4;
+    background-color: #eff6ff;
+    border-left: 3px solid #2563eb;
 }
 
 .clipboard-list row:selected .clipboard-item-label {
-    color: #003d82;
+    color: #1e40af;
 }
 
+/* Clipboard content in monospace — code, commands, URLs look native */
 .clipboard-item-label {
-    font-size: 13px;
-    color: #1a1a1a;
-    font-family: "Segoe UI", "Inter", sans-serif;
+    font-size: 12.5px;
+    color: #1f2937;
+    font-family: "Fira Mono", "Source Code Pro", "Ubuntu Mono",
+                 "DejaVu Sans Mono", monospace;
+    letter-spacing: -0.1px;
 }
 
 .clipboard-item-time {
-    font-size: 11px;
-    color: #9e9e9e;
+    font-size: 10.5px;
+    color: #9ca3af;
+    font-family: "Fira Sans", "Ubuntu", "Cantarell", sans-serif;
+    font-weight: 400;
 }
 
 /* ── Emoji picker ── */
 .emoji-btn {
     font-size: 22px;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 4px;
-    border-radius: 6px;
+    min-width: 46px;
+    min-height: 46px;
+    padding: 6px;
+    border-radius: 8px;
     border: none;
     background: transparent;
+    transition: background-color 80ms;
 }
 
 .emoji-btn:hover {
-    background-color: rgba(0,120,212,0.08);
+    background-color: #eff6ff;
 }
 
 .emoji-btn:active {
-    background-color: rgba(0,120,212,0.18);
+    background-color: #dbeafe;
 }
 
 /* ── Shortcuts tab ── */
@@ -473,162 +521,179 @@ entry.search:focus {
 }
 
 .shortcut-list row {
-    background-color: #ffffff;
-    border-radius: 6px;
-    margin: 2px 8px;
-    border: 1px solid transparent;
+    background-color: transparent;
+    border-radius: 0;
+    margin: 0;
+    border: none;
+    border-left: 3px solid transparent;
 }
 
 .shortcut-list row:hover {
-    background-color: #f5f5f5;
-    border-color: #e8e8e8;
+    background-color: #f3f4f6;
 }
 
 .shortcut-name {
     font-size: 13px;
     font-weight: 600;
-    color: #1a1a1a;
-    font-family: "Segoe UI", "Inter", sans-serif;
+    color: #111827;
+    font-family: "Fira Sans", "Ubuntu", "Cantarell", sans-serif;
 }
 
 .shortcut-cmd {
-    font-size: 11px;
-    color: #757575;
-    font-family: "Cascadia Code", "JetBrains Mono", monospace;
+    font-size: 11.5px;
+    color: #6b7280;
+    font-family: "Fira Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    letter-spacing: -0.1px;
 }
 
 .shortcut-run-btn {
-    font-size: 12px;
-    color: #107c10;
-    background-color: rgba(16,124,16,0.08);
-    border: 1px solid rgba(16,124,16,0.25);
+    font-size: 11px;
+    font-weight: 600;
+    color: #15803d;
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
     border-radius: 4px;
     padding: 2px 10px;
     min-height: 26px;
+    font-family: "Fira Sans", "Ubuntu", sans-serif;
 }
 
 .shortcut-run-btn:hover {
-    background-color: rgba(16,124,16,0.15);
+    background-color: #dcfce7;
+    border-color: #86efac;
 }
 
 .shortcut-del-btn {
-    font-size: 12px;
-    color: #c50f1f;
-    background-color: rgba(197,15,31,0.06);
-    border: 1px solid rgba(197,15,31,0.2);
+    font-size: 11px;
+    font-weight: 600;
+    color: #dc2626;
+    background-color: #fff5f5;
+    border: 1px solid #fecaca;
     border-radius: 4px;
     padding: 2px 8px;
     min-height: 26px;
+    font-family: "Fira Sans", "Ubuntu", sans-serif;
 }
 
 .shortcut-del-btn:hover {
-    background-color: rgba(197,15,31,0.14);
+    background-color: #fee2e2;
+    border-color: #fca5a5;
 }
 
 .add-shortcut-toggle {
     font-size: 12px;
     font-weight: 500;
-    color: #0078d4;
+    color: #2563eb;
     background: transparent;
-    border: 1px dashed rgba(0,120,212,0.4);
-    border-radius: 6px;
-    padding: 5px 14px;
+    border: 1.5px dashed #bfdbfe;
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-family: "Fira Sans", "Ubuntu", sans-serif;
 }
 
 .add-shortcut-toggle:hover {
-    background-color: rgba(0,120,212,0.06);
+    background-color: #eff6ff;
+    border-color: #93c5fd;
 }
 
 /* ── Tools tab ── */
 .tools-title {
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
-    color: #616161;
-    font-family: "Segoe UI", "Inter", sans-serif;
+    color: #9ca3af;
+    font-family: "Fira Sans", "Ubuntu", "Cantarell", sans-serif;
+    letter-spacing: 0.6px;
 }
 
 .tool-btn {
     font-size: 13px;
     font-weight: 500;
-    color: #1a1a1a;
-    background-color: #f5f5f5;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 12px 16px;
-    min-height: 56px;
-    font-family: "Segoe UI", "Inter", sans-serif;
+    color: #374151;
+    background-color: #f9fafb;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px 16px;
+    min-height: 58px;
+    font-family: "Fira Sans", "Ubuntu", "Cantarell", sans-serif;
+    transition: all 120ms;
 }
 
 .tool-btn:hover {
-    background-color: #e8f0fe;
-    border-color: #0078d4;
-    color: #0078d4;
+    background-color: #eff6ff;
+    border-color: #93c5fd;
+    color: #1d4ed8;
+    box-shadow: 0 1px 4px rgba(37,99,235,0.10);
 }
 
 .tool-btn:active {
-    background-color: #dde8f8;
+    background-color: #dbeafe;
+    border-color: #2563eb;
 }
 
-/* ── Shared status label ── */
+/* ── Shared status / output label ── */
 .status-label {
-    font-size: 12px;
-    color: #616161;
-    font-family: "Cascadia Code", "JetBrains Mono", monospace;
+    font-size: 11.5px;
+    color: #6b7280;
+    font-family: "Fira Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    letter-spacing: -0.1px;
 }
 
-/* ── Update progress bar ── */
+/* ── Update progress bar — amber stripe at bottom ── */
 .update-bar {
-    background-color: #fffbe6;
-    border-top: 1px solid #f0e68c;
-    border-radius: 0 0 10px 10px;
+    background-color: #fffbeb;
+    border-top: 1px solid #fde68a;
+    border-radius: 0 0 12px 12px;
 }
 
 .update-bar-label {
     font-size: 12px;
-    color: #6b5900;
-    font-family: "Segoe UI", "Inter", sans-serif;
+    color: #92400e;
+    font-family: "Fira Sans", "Ubuntu", sans-serif;
     font-weight: 500;
 }
 
-/* ── Dim / empty state ── */
+/* ── Empty / dim state ── */
 .dim-label {
     font-size: 13px;
-    color: #bdbdbd;
-    font-family: "Segoe UI", "Inter", sans-serif;
+    color: #d1d5db;
+    font-family: "Fira Sans", "Ubuntu", "Cantarell", sans-serif;
 }
 
-/* ── General entry ── */
+/* ── Generic entry (add-shortcut form fields) ── */
 entry {
-    background-color: #f5f5f5;
-    color: #1a1a1a;
-    border: 1px solid #e0e0e0;
+    background-color: #f9fafb;
+    color: #111827;
+    border: 1.5px solid #e5e7eb;
     border-radius: 6px;
-    padding: 6px 10px;
-    caret-color: #0078d4;
-    font-family: "Segoe UI", "Inter", sans-serif;
+    padding: 7px 11px;
+    caret-color: #2563eb;
+    font-family: "Fira Sans", "Ubuntu", "Cantarell", sans-serif;
+    font-size: 13px;
 }
 
 entry:focus {
     background-color: #ffffff;
-    border-color: #0078d4;
-    box-shadow: 0 0 0 2px rgba(0,120,212,0.15);
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
 }
 
-/* ── Suggested-action button (Save) ── */
+/* ── Save / confirm buttons ── */
 button.suggested-action {
-    background-color: #0078d4;
+    background-color: #2563eb;
     color: #ffffff;
     border-radius: 6px;
     font-weight: 600;
-    padding: 4px 18px;
+    font-size: 13px;
+    padding: 5px 20px;
     border: none;
+    font-family: "Fira Sans", "Ubuntu", sans-serif;
 }
 
 button.suggested-action:hover {
-    background-color: #106ebe;
+    background-color: #1d4ed8;
 }
 
 button.suggested-action:active {
-    background-color: #005a9e;
+    background-color: #1e40af;
 }
 "#;
