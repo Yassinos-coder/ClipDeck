@@ -39,9 +39,10 @@ for dep in curl python3; do
     command -v "$dep" &>/dev/null || die "$dep is required but not installed."
 done
 
-# ── Detect GTK4 ──────────────────────────────────────────────────────────────
-if ! pkg-config --exists gtk4 2>/dev/null; then
-    info "GTK4 not detected — installing system libraries..."
+# ── Detect GTK4 runtime ──────────────────────────────────────────────────────
+if ! ldconfig -p 2>/dev/null | grep -q libgtk-4 && \
+   ! dpkg -l libgtk-4-1 2>/dev/null | grep -q '^ii'; then
+    info "GTK4 runtime not found — installing system libraries..."
     sudo apt-get update -qq
     sudo apt-get install -y \
         libgtk-4-1 \
