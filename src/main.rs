@@ -27,6 +27,15 @@ fn main() {
         env!("CARGO_PKG_VERSION")
     );
 
+    // ── CLI args ──────────────────────────────────────────────────────────────
+    // Parse --show before GTK sees args (GTK would reject unknown flags).
+    let show_on_start = std::env::args().any(|a| a == "--show");
+    // Pass only the program name + GTK-known args so we don't get
+    // "Unknown option" warnings from the GTK arg parser.
+    let gtk_args: Vec<String> = std::env::args()
+        .filter(|a| a != "--show")
+        .collect();
+
     // ── Settings ──────────────────────────────────────────────────────────────
     let settings = Arc::new(Settings::load());
     log::debug!("Settings loaded: {:?}", settings);
@@ -43,9 +52,13 @@ fn main() {
     log::info!("Database at {:?}", Storage::db_path());
 
     // ── GTK / Libadwaita application ──────────────────────────────────────────
+    // NON_UNIQUE: skip D-Bus singleton registration, which can fail in
+    // environments where the session bus is unavailable or the name is already
+    // taken.  The global hotkey (XGrabKey) already ensures only one instance
+    // responds to Super+Alt+V.
     let app = libadwaita::Application::builder()
         .application_id("dev.clipdeck")
-        .flags(gtk4::gio::ApplicationFlags::FLAGS_NONE)
+        .flags(gtk4::gio::ApplicationFlags::NON_UNIQUE)
         .build();
 
     // Clone for move into activate closure.
@@ -53,19 +66,23 @@ fn main() {
     let storage_clone = storage.clone();
 
     app.connect_activate(move |app| {
-        build_ui(app, settings_clone.clone(), storage_clone.clone());
+        build_ui(app, settings_clone.clone(), storage_clone.clone(), show_on_start);
     });
 
-    app.run();
+    app.run_with_args(&gtk_args);
 }
 
 fn build_ui(
     app: &libadwaita::Application,  // libadwaita::Application is IsA<gtk4::Application>
     settings: Arc<Settings>,
     storage: Arc<Mutex<Storage>>,
+    show_on_start: bool,
 ) {
-    // ── Create popup window (hidden initially) ────────────────────────────────
+    // ── Create popup window (hidden initially, or shown if --show was passed) ──
     let deck = Arc::new(ClipDeckWindow::new(app, storage.clone()));
+    if show_on_start {
+        deck.window.present();
+    }
 
     // ── Cross-thread channel (background → GTK main loop) ─────────────────────
     let (sender, receiver) = async_channel::unbounded::<AppMessage>();
