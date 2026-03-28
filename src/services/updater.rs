@@ -107,7 +107,9 @@ pub async fn download_install_restart(
     }
 
     let current_exe = std::env::current_exe()?;
-    let tmp_path = current_exe.with_extension("update_tmp");
+    // Download to /tmp — the current exe may live in a root-owned directory
+    // (/usr/local/bin) which we cannot write to directly.
+    let tmp_path = std::env::temp_dir().join("clipdeck.update_tmp");
 
     // ── Download ──────────────────────────────────────────────────────────────
     on_progress(format!("Downloading {}…", info.tag));
@@ -152,7 +154,33 @@ pub async fn download_install_restart(
     // ── Atomic replace ────────────────────────────────────────────────────────
     on_progress("Installing…".to_string());
     log::info!("Replacing {:?} with new binary", current_exe);
-    std::fs::rename(&tmp_path, &current_exe)?;
+
+    // Try a direct copy first (works when the exe is user-writable).
+    // Fall back to `pkexec cp` for system directories like /usr/local/bin.
+    let copy_result = std::fs::copy(&tmp_path, &current_exe);
+    match copy_result {
+        Ok(_) => {
+            std::fs::remove_file(&tmp_path).ok();
+        }
+        Err(ref e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+            on_progress("Installing… (enter your password if prompted)".to_string());
+            log::info!("Direct copy failed, retrying with pkexec");
+            let status = std::process::Command::new("pkexec")
+                .args([
+                    "cp",
+                    "--",
+                    tmp_path.to_str().unwrap_or_default(),
+                    current_exe.to_str().unwrap_or_default(),
+                ])
+                .status()
+                .map_err(|e| anyhow::anyhow!("pkexec not found: {e}"))?;
+            std::fs::remove_file(&tmp_path).ok();
+            if !status.success() {
+                anyhow::bail!("pkexec cp failed — update cancelled");
+            }
+        }
+        Err(e) => return Err(e.into()),
+    }
 
     // ── Restart ───────────────────────────────────────────────────────────────
     on_progress("Restarting…".to_string());

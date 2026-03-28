@@ -27,6 +27,14 @@ fn main() {
         env!("CARGO_PKG_VERSION")
     );
 
+    // ── Single-instance lock ──────────────────────────────────────────────────
+    // Prevents two instances running side-by-side (which can happen with
+    // NON_UNIQUE when an old process is still alive after an update).
+    if !acquire_instance_lock() {
+        log::info!("Another instance is already running — exiting");
+        std::process::exit(0);
+    }
+
     // ── CLI args ──────────────────────────────────────────────────────────────
     // Parse --show before GTK sees args (GTK would reject unknown flags).
     let show_on_start = std::env::args().any(|a| a == "--show");
@@ -188,4 +196,23 @@ fn handle_message(msg: AppMessage, deck: &ClipDeckWindow) {
             }
         }
     }
+}
+
+// ── Single-instance lock ───────────────────────────────────────────────────────
+
+/// Write our PID to a lock file.  Returns `false` if another instance is
+/// already running (PID file exists and that process is live in /proc).
+fn acquire_instance_lock() -> bool {
+    let lock_path = std::env::temp_dir().join("clipdeck.lock");
+
+    if let Ok(contents) = std::fs::read_to_string(&lock_path) {
+        if let Ok(pid) = contents.trim().parse::<u32>() {
+            if std::path::Path::new(&format!("/proc/{pid}")).exists() {
+                return false; // still running
+            }
+        }
+    }
+
+    let _ = std::fs::write(&lock_path, std::process::id().to_string());
+    true
 }
