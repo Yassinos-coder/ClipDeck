@@ -108,21 +108,21 @@ chmod +x "$INSTALL_BIN"
 success "Binary installed → ${INSTALL_BIN}"
 
 # ── Ensure ~/.local/bin is on PATH ────────────────────────────────────────────
+# Note: when this script runs via "curl | bash", $PATH reflects the subshell
+# environment, not the user's interactive shell — so we check the rc files
+# directly rather than checking $PATH.
 PATH_LINE='export PATH="$HOME/.local/bin:$PATH"'
-ADDED_TO=()
 for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
     if [[ -f "$rc" ]] && ! grep -qF '.local/bin' "$rc"; then
-        echo "" >> "$rc"
-        echo "# Added by ClipDeck installer" >> "$rc"
-        echo "$PATH_LINE" >> "$rc"
-        ADDED_TO+=("$rc")
+        printf '\n# Added by ClipDeck installer\n%s\n' "$PATH_LINE" >> "$rc"
+        success "Added ~/.local/bin to PATH in $rc"
     fi
 done
-if [[ ${#ADDED_TO[@]} -gt 0 ]]; then
-    success "Added ~/.local/bin to PATH in: ${ADDED_TO[*]}"
+# Create the file if neither existed
+if [[ ! -f "$HOME/.bashrc" && ! -f "$HOME/.zshrc" ]]; then
+    printf '# Added by ClipDeck installer\n%s\n' "$PATH_LINE" >> "$HOME/.bashrc"
+    success "Created ~/.bashrc with PATH entry"
 fi
-# Apply to the current session so clipdeck is immediately available
-export PATH="$HOME/.local/bin:$PATH"
 
 # ── Install systemd user service ──────────────────────────────────────────────
 info "Setting up autostart service..."
